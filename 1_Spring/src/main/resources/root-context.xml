@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd">
+	
+	<!-- root-context의 위치 옮기기
+		root-context의 내용이 백단과 관련이 있으면 큰 resources로 옮기는 것이 일반적이고
+		webapp에 root-context가 있으면 일반적으로 프론트단의 내용들이 있을 때 webapp에 둔다.
+		바꿀 경우 web.xml에 있는 root-context.xml의 위치를 classpath:root-context.xml로 바꿔줘야한다.
+		(classpath: 큰 resources를 나타낼 때 쓴다)
+	 -->
+	
+	
+	
+	<!-- 데이터와 관련된 부분들을 넣을 것임 -->
+	
+	<!-- DataSource 등록 -->
+	
+	<!-- bean태그: bean을 등록 -> 객체를 생성 -->	
+	<bean class="org.apache.commons.dbcp.BasicDataSource" id="dataSource" destroy-method="close">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/>
+		<property name="url" value="jdbc:oracle:thin:@localhost:1521:xe"/>
+		<property name="username" value="Spring"/>
+		<property name="password" value="Spring"/>
+	</bean> 
+	
+	<!-- sqlSession 빈 등록 -->
+	<bean class="org.mybatis.spring.SqlSessionFactoryBean" id="sqlSession">
+		<property name="configLocation" value="classpath:mybatis-config.xml"/>
+											<!-- classpath: 큰 resources를 나타낼 때 쓴다 -->
+		<property name="dataSource" ref="dataSource"/><!-- 위에 bean태그의 id="dataSource" -->
+	</bean>
+	
+	<bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg ref="sqlSession"/>
+	</bean>
+	
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+	
+	<!-- 파일 업로드 -->
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="maxUploadSize" value="100000000"/>
+		<property name="maxInMemorySize" value="100000000"/>
+	</bean>
+	
+</beans>
