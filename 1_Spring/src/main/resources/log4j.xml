@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN" "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+	<!--  
+	로그log의 장점
+	- 빠르고 효율적인 디버깅
+	- 로그 파악 쉬움(로그 이력 -> 파일, DB에 저장)
+	- 프로그램 문제 파악 용이
+	
+	log의 단점
+	- 개발 중간에 로깅 코드 삽입 어려움
+	- 로깅을 위한 코드 추가로 전체 코드 사이즈 증가
+	- 과하게 생성되는 로그로 혼란 야기 -> 애플리케이션 성능에 영향미침
+	
+	log4j.xml이 log를 담당하는 파일
+	
+	구조: Appenders - 3rdparty Loggers - Root Logger
+	-->
+	
+	
+	
+	<!-- Appenders -->
+	<!-- 
+		Appenders : 전달된 로그를 어디에 출력할지 결정
+			ConsoleAppender : 로그를 콘솔에 출력하기 위한 Appender
+			JDBCAppender	: 로그를 디비에 출력하기 위한 Appender
+			FileAppender	: 로그를 파일에 출력하기 위한 Appender
+							     단, 지정한 파일에 로그가 계속 남기 때문에 크기가 지나치게 커질 수 있고 지속적인 로그 관리가 불가능해짐
+			RollingFileAppender : FileAppender를 보완한 개념
+								    일정한 조건 후에 기존 파일을 백업파일로 바꾸고 다시 처음부터 시작
+								    
+		Layout : 로그를 어떤 형식으로 출력할 지 결정(DateLayout, HTMLLayout, PatternLayout(디버깅 적합), SimpleLayout, XMLLayout)
+			%p 		: debug, info, warn, error, fatal 등의 priority 출력
+			%m 		: 로그 내용 출력
+			%d 		: 로깅 이벤트가 발생한 시간 출력(프로그램 속도를 느리게 할 수 있음)
+			%t 		: 로그 이벤트가 발생된 쓰레드 이름 출력
+			%% 		: % 출력
+			%n 		: 개행문자 출력
+			%c 		: package(카테고리) 출력
+			%c{n} 	: n만큼의 package를 하단부터 역으로 출력
+					카테고리가 a.b.c처럼 되어있다면 %c{2}는 b.c 출력
+			%C 		: 호출자의 클래스 명 출력(똑같이 숫자 지정 가능)
+			%F 		: 로깅이 발생한 파일명 출력
+			%l 		: 로깅이 발생한 caller의 정보 출력
+			%L 		: 로깅이 발생한 caller의 라인 수 출력
+			%M 		: 로깅이 발생한 method의 이름 출력
+			%r		 : 애플리케이션 시작 이후부터 로깅이 발생한 시점의 시간(ms) 출력
+	
+	-->
+	
+	<appender name="console" class="org.apache.log4j.ConsoleAppender">
+												<!-- console에 출력을 하겠다 -->
+		<param name="Target" value="System.out" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%-5p: %c - %m%n" />
+			<!-- -(마이너스) : 좌측정렬 / -5 : 5 칸을 확보하고 왼쪽 정렬 -->
+			<!-- INFO : org.springframework.web.context.ContextLoader - Root WebApplicationContext: initialization started -->
+			<!-- %-5p : %c											  - %m%n-->
+			<!-- <param name="ConversionPattern" value="%-5p: %c(%d) - %m%n" /> -->
+			<!-- INFO : org.springframework.web.context.ContextLoader(2021-06-18 10:18:58,941) - Root WebApplicationContext: initialization started -->
+		</layout>
+	</appender>
+	
+	<!--  
+		Appender 실습 
+		<새 Appender를 추가하여 로그 찍기>
+		
+		새 appender 이름 : myConsole
+		DEBUG: MemberController.enrollView{300} - 회원등록페이지
+											300 -> 라인 수(예시임)
+	-->
+	<appender name="myConsole" class="org.apache.log4j.ConsoleAppender">
+		<param name="Target" value="System.out" />
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%-5p: %c{1}.%M{%L} - %m%n"/>
+		</layout>
+	</appender>
+	
+	<appender name="myDailyRollingFile" class="org.apache.log4j.DailyRollingFileAppender">
+		<param name="File" value="/logs/member/login.log"/>
+		<param name="Append" value="true"/>
+		
+		<param name="encoding" value="UTF-8"/>
+		
+		<param name="DatePattern" value="'.'yyyyMMdd"/>
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%d{yy-MM-dd HH:mm:ss} [%p] %c{1}.%M{%L} - %m%n"/>
+		</layout>
+	</appender>
+	
+	
+	
+	
+	
+	<!-- Application Loggers -->
+	<!--  
+		Logger : 로그 주체
+			name 	: 로그 발생 패키지, 오타가 있어도 에러가 안 나므로 주의
+			level 	: 로그 레벨 지정
+					  DEBUG < INFO < WARN < ERROR < FATAL : 설정한 레벨 속성 이상만 화면에 출력
+					  		ex. INFO로 설정하면 DEBUG는 출력 안 됨
+					  		FATAL	: 아주 심각한 에러
+					  		ERROR	: 어떤 요청 처리 중 문제 발생
+					  		WARN	: 실행에는 문제가 없지만 향후 시스템 에러에 원인이 될 수 있는 경고 메시지
+					  		INFO	: 상태 변경과 같은 정보성 메시지
+					  		DEBUG	: 개발 시 디버그 용도로 사용하는 메시지
+					  		TRACE	: 경로 추적 같이 좀 더 상세한 이벤트 시 사용(디버그 레벨이 너무 광범위 한 것을 해결하기 위함)
+	-->
+	<logger name="com.kh.spring"><!-- name에 있는 log들은 다 내가 받겠다 -->
+		<level value="info" />
+	</logger>
+	
+	<!-- 3rdparty Loggers -->
+	<logger name="org.springframework.core">
+		<level value="info" />
+	</logger>
+	
+	<logger name="org.springframework.beans">
+		<level value="info" />
+	</logger>
+	
+	<logger name="org.springframework.context">
+		<level value="info" />
+	</logger>
+
+	<logger name="org.springframework.web">
+		<level value="info" />
+	</logger>
+	
+	<!-- Log4jTest를 위한 새로운 logger 추가 -->
+	<logger name="com.kh.spring.log.Log4jTest" additivity="false">
+		<level value="debug"/>
+		<appender-ref ref="console"/><!-- 2번씩 나옴 -->
+	</logger>
+	<!-- 2번 출력하는 이유
+		 1. 얘가 root logger로 넘어가기 전에 <appender-ref ref="console"/>를 먼저 참조하고 있으니 위에 있는 appender를 이용해서 한 번 출력 
+		 2. 아래 root logger로 가서 <appender-ref ref="console" />를 한 번 더 참조하고 있으니 두 번 출력 
+	-->
+	<!-- additivity="false" 추가하면 한 번 씩만 나옴 -->
+
+	
+	<!-- Appender 실습 -->
+	<logger name="com.kh.spring.member.controller.MemberController" additivity="false">
+		<level value="debug"/>
+		<appender-ref ref="myConsole"/>
+		<!-- <appender-ref ref="myDailyRollingFile"/> -->
+	</logger>
+	
+	<logger name="com.kh.spring.interceptor.InterceptorTest">
+		<level value="debug"></level>
+	</logger>
+	
+	<logger name="com.kh.spring.interceptor.LoginInterceptor">
+		<level value="info"></level>
+		<appender-ref ref="myDailyRollingFile"/>
+	</logger>
+	
+	<logger name="com.kh.spring.common.aop" additivity="false">
+		<level value="debug"/>
+		<appender-ref ref="myConsole"/>
+	</logger>	
+
+	<!-- 
+		Filter vs Interceptor
+		
+		공통점 : 요청을 가로채 특정 작업 진행
+		차이점 : 범위가 다름
+			Filter : 같은 웹 애플리케이션 내에서만 접근 가능 -> 한글 처리
+			Interceptor : 스프링에서 관리가 되기 때문에 스프링 내의 모든 객체에 접근 가능 -> 로그인 처리
+		
+		<Interceptor 만들기>
+		HandlerInterceptor 인터페이스
+		- preHandle() = 전처리 : DispatcherServlet이 Controller를 호출하기 전(Controller로 요청이 들어가기 전)에 수행
+		- postHandle() = 후처리 : Controller에서 DispatcherServlet으로 리턴되는 순간에 수행
+		- afterCompletion() = 뷰단 처리 후 : 모든 작업(뷰/결과 생성)이 전부 완료된 후 수행
+	
+	-->
+
+
+
+
+	<!-- Root Logger -->
+	<!--  
+		Root Logger
+			모든 자식 logger들의 로깅 출력이 Root Logger를 통해 이루어짐
+	-->
+	<root>
+		<priority value="warn" />
+		<appender-ref ref="console" />
+	</root>
+	
+</log4j:configuration>

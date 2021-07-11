@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="memberMapper">
+
+	<select id="login" resultMap="memberResultSet">
+		<!-- parameterType은 안 써줘도 됨! : 필요한데 생략이 가능한 것임 -->
+		select *
+		from member
+<!-- 		where member_id=#{id} and member_pwd=#{pwd} and status='Y' -->
+		where member_id=#{id} and status='Y'
+	</select>
+	<!-- 암호화된 비밀번호 가져오기 위해 쿼리문 변경 -->
+	
+	<resultMap type="Member" id="memberResultSet">
+		<id property="id" column="MEMBER_ID"/>
+		<result property="pwd" column="MEMBER_PWD"/>
+		<result property="name" column="MEMBER_NAME"/>
+		<result property="email" column="EMAIL"/>
+		<result property="gender" column="GENDER"/>
+		<result property="phone" column="PHONE"/>
+		<result property="address" column="ADDRESS"/>
+		<result property="enrollDate" column="ENROLL_DATE"/>
+		<result property="updateDate" column="UPDATE_DATE"/>
+		<result property="mStatus" column="STATUS"/>
+	</resultMap>
+	
+	<insert id="insertMember">
+		insert into member
+		values (#{id}, #{pwd}, #{name}, '임시', #{email}, #{gender}, #{phone}, #{address}, sysdate, sysdate, default)
+	</insert>
+	<!-- #{객체에있는변수} -->
+
+	<update id="updateMember">
+		update member
+		set member_name=#{name}, email=#{email}, gender=#{gender}, phone=#{phone}, address=#{address}, update_date=sysdate
+		where member_id=#{id}
+	</update>
+	
+	<update id="updatePwd">
+		update member
+		set member_pwd=#{pwd}
+		where member_id=#{id}
+	</update>
+	
+	<update id="deleteMember">
+		update member
+		set status='N'
+		where member_id=#{id}
+	</update>
+	
+	<select id="CheckId" resultType="_int">
+		SELECT COUNT(*) 
+		FROM member
+		WHERE member_id=#{userId}
+	</select>
+	
+</mapper>

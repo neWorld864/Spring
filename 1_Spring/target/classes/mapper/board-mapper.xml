@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="boardMapper">
+<!-- mybatis-config로 가서 mapper 등록하기! -->
+	<select id="getListCount" resultType="_int">
+		select count(*)
+		from board
+		where status='Y'
+	</select>
+	
+	<select id="selectList" resultMap="boardResultSet">
+		select *
+		from board
+		where status='Y'
+		order by board_id desc
+	</select>
+	
+	<!-- mybatis.config에서 별칭 등록 해야함 -->
+	<resultMap type="Board" id="boardResultSet"> 
+		<id property="bId" column="BOARD_ID"/>
+		<result property="bTitle" column="BOARD_TITLE"/>
+		<result property="bWriter" column="BOARD_WRITER"/>
+		<result property="bContent" column="BOARD_CONTENT"/>
+		<result property="originalFileName" column="ORIGINAL_FILENAME"/>
+		<result property="renameFileName" column="RENAME_FILENAME"/>
+		<result property="bCount" column="BOARD_COUNT"/>
+		<result property="bCreateDate" column="BOARD_CREATE_DATE"/>
+		<result property="bModifyDate" column="BOARD_MODIFY_DATE"/>
+		<result property="bStatus" column="STATUS"/>
+	</resultMap> 
+	<!-- property: vo에 대한 필드가 들어감 column:  -->
+	
+	<insert id="insertBoard">
+		insert into board
+		values(SEQ_BID.NEXTVAL, #{bTitle}, #{bWriter}, #{bContent}, #{originalFileName}, #{renameFileName},
+				default, sysdate, sysdate, default)
+	</insert>
+	
+	<update id="addReadCount">
+		update board
+		set board_count = board_count + 1
+		where board_id = #{bId}
+	</update>
+	
+	<select id="selectBoard" parameterType="_int" resultMap="boardResultSet">
+		select *
+		from board
+		WHERE status='Y' and BOARD_ID = ${bId}
+	</select>
+	
+	<update id="updateBoard">
+		update board
+		<set>
+		BOARD_TITLE=#{bTitle}, BOARD_CONTENT=#{bContent}, BOARD_MODIFY_DATE=sysdate, 
+			<if test="originalFileName != null">
+				original_fileName=#{originalFileName}, rename_fileName=#{renameFileName}
+			</if>
+		</set>
+		where board_id = #{bId}
+	</update>
+	
+	<update id="deleteBoard">
+		update board
+		set status='N' 
+		where board_id = #{bId}
+	</update>
+	
+	<insert id="insertReply">
+		insert into reply
+		values(seq_rid.nextval, #{rContent}, #{refBid}, #{rWriter}, sysdate, sysdate, default)
+	</insert>
+	
+	<select id="selectReplyList" parameterType="_int" resultMap="ReplyResultSet">
+		select *
+		from reply
+		where status='Y' and ref_board_id=#{bId}
+		order by reply_id desc
+	</select>
+	<resultMap type="Reply" id="ReplyResultSet"> 
+		<id property="rId" column="REPLY_ID"/>
+		<result property="rContent" column="REPLY_CONTENT"/>
+		<result property="refBid" column="REF_BOARD_ID"/>
+		<result property="rWriter" column="REPLY_WRITER"/>
+		<result property="rCreateDate" column="REPLY_CREATE_DATE"/>
+		<result property="rModifyDate" column="REPLY_MODIFY_DATE"/>
+		<result property="rStatus" column="STATUS"/>
+	</resultMap> 
+	
+	<select id="selectTopList" resultMap="boardResultSet">
+		<![CDATA[
+			SELECT *
+			FROM (SELECT *
+			      FROM board
+			      ORDER BY BOARD_COUNT DESC)
+			WHERE ROWNUM <= 5 and status='Y'
+		]]>
+		<!-- 부등호 : 태그로 인식해서 오류남 => 1. 등호를 왼쪽으로 가게하는 방법 (5 >= ROWNUM)
+									 2. <![CDATA[]]>로 감싸기 -->
+	</select>
+</mapper>
